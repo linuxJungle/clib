@@ -48,8 +48,12 @@ typedef struct {
 } http_des_t;
 
 ssize_t http_get (http_des_t *dest);
-ssize_t http_put (http_des_t *dest);
 ssize_t http_post (http_des_t *dest); 
+ssize_t http_put (http_des_t *dest);
+ssize_t http_options (http_des_t *dest);
+ssize_t http_head (http_des_t *dest);
+ssize_t http_delete (http_des_t *dest);
+ssize_t http_trace (http_des_t *dest);
 
 static unsigned short validate_port (unsigned short port);
 int connect_to_server (const char *host, unsigned short port);

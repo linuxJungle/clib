@@ -140,8 +140,7 @@ http_get (http_des_t *dest)
             return fd;
         else
             return -1;
-    }
-    else
+    } else
         return -1;
 }
 
@@ -158,8 +157,7 @@ http_put (http_des_t *dest)
             return fd;
         else
             return -1;
-    }
-    else
+    } else
         return -1;
 }
 
@@ -176,8 +174,87 @@ http_post (http_des_t *dest)
             return fd;
         else
             return -1;
-    }
-    else
+    } else
+        return -1;
+}
+
+ssize_t
+http_trace (http_des_t *dest)
+{
+    int  fd;
+
+    validate_port(dest->host_port);
+
+    fd = connect_to_server (dest->host_name, dest->host_port);
+    if (fd > 0) {
+        if (__http_method__ (fd, dest, HTTP_TRACE) > 0)
+            return fd;
+        else
+            return -1;
+    } else
+        return -1;
+}
+
+ssize_t
+http_delete (http_des_t *dest)
+{
+    int  fd;
+
+    validate_port(dest->host_port);
+
+    fd = connect_to_server (dest->host_name, dest->host_port);
+    if (fd > 0) {
+        /*http delete method don't have body,so init it NULL'*/
+        dest->content_len = 0;
+        dest->content = NULL;
+
+        if (__http_method__ (fd, dest, HTTP_DELETE) > 0)
+            return fd;
+        else
+            return -1;
+    } else
+        return -1;
+}
+
+ssize_t
+http_options (http_des_t *dest)
+{
+    int  fd;
+
+    validate_port(dest->host_port);
+
+    fd = connect_to_server (dest->host_name, dest->host_port);
+    if (fd > 0) {
+        /*http options method don't have body,so init it NULL'*/
+        dest->content_len = 0;
+        dest->content = NULL;
+
+        if (__http_method__ (fd, dest, HTTP_OPTIONS) > 0)
+            return fd;
+        else
+            return -1;
+    } else
+        return -1;
+}
+
+ssize_t
+http_head (http_des_t *dest)
+{
+    int  fd;
+
+    validate_port(dest->host_port);
+
+    fd = connect_to_server (dest->host_name, dest->host_port);
+    if (fd > 0) {
+        /*http head method don't have body,so init it NULL'*/
+        dest->content_len = 0;
+        dest->content = NULL;
+
+        if (__http_method__ (fd, dest, HTTP_HEAD) > 0)
+            return fd;
+        else
+            return -1;
+    } else
         return -1;
 }
 
