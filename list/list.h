@@ -46,4 +46,9 @@ void __list_insert_head__(list_t *list, list_node_t *node);
 #define list_for_each(list, iter) \
     for ((iter) = (list)->head; (iter); (iter) = (iter)->next)
 
+#define list_safe_for_each(list, iter, next) \
+    for ((iter) = (list)->head, (next) = ((iter) ? (iter)->next : NULL); \
+         (iter); \
+         (iter) = (next != NULL ? next : NULL), (next) = ((next) != NULL ? (next)->next : NULL))
+
 #endif /* !LIST_H */

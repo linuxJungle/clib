@@ -33,3 +33,6 @@
 
 # vim's swp file
 *.swp
+
+# log file
+*.log
