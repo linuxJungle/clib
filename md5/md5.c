@@ -55,13 +55,15 @@ __pad_str__ (char *str)
     if (str_len <= 0)
         __die__ ("string len is less than or equal 0.");
 
-    pad_len = (str_len % 64) > 56? 64 + 56 - (str_len % 64): 56 - (str_len % 64);
-    paded_len = str_len + pad_len + 8;
+    pad_len = (str_len % BLOCK_SIZE) > BLOCK_SIZE - STR_SIZE?
+              BLOCK_SIZE + (BLOCK_SIZE - STR_SIZE) - (str_len % BLOCK_SIZE):
+              (BLOCK_SIZE - STR_SIZE) - (str_len % BLOCK_SIZE);
+    paded_len = str_len + pad_len + STR_SIZE;
     result = (char *)malloc (paded_len);
     strcpy(result, str);
 
     /*first padding an 1 and some 0 until*/
-    result[str_len] = 0x80;
+    result[str_len] = FIRST_PADDING_BYTES;
     for (i = 1; i < pad_len; i++) {
         result[str_len + i] = '\0';
     }

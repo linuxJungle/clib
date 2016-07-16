@@ -20,6 +20,10 @@
 #define HASH_SIZE     32
 /*each group size is 64 bytes */
 #define BLOCK_SIZE    64
+/*give string len, if len greater 8 bytes, truncation last 8 bytes*/
+#define STR_SIZE      8
+
+#define FIRST_PADDING_BYTES 0x80
 
 #define shift(x, n)   (((x) << (n)) | ((x) >> (32 -(n))))
 #define F(x, y, z)    (((x) & (y)) | ((~x) & (z)))
