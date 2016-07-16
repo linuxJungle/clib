@@ -9,7 +9,7 @@ static unsigned int       stage2;
 static unsigned int       stage3;
 static unsigned int       stage4;
 static size_t             paded_len;
-static const unsigned int k[]=
+static const unsigned int k[] =
 {
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf,
     0x4787c62a, 0xa8304613, 0xfd469501, 0x698098d8, 0x8b44f7af,
@@ -144,6 +144,7 @@ md5_encode (char * str)
             num[j] = ret[i * (BLOCK_SIZE / 4) + j];
         __main_loop__ (num);
     }
+    free (ret);
 
     hash = (char *)malloc (HASH_SIZE + 1);
     for (i = 0; i < 4; i++) {
@@ -171,6 +172,7 @@ main (void)
 {
     char *ret = md5_encode("admin");
     printf("%s\n", ret);
+    free (ret);
     return 0;
 }
 */
