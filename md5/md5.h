@@ -11,10 +11,6 @@
 #define B             0xefcdab89
 #define C             0x98badcfe
 #define D             0x10325476
-#define A             0x67452301
-#define B             0xefcdab89
-#define C             0x98badcfe
-#define D             0x10325476
 
 /*hash result is 128 bits*/
 #define HASH_SIZE     32
