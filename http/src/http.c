@@ -28,6 +28,8 @@ static const char *__http_method_to_string__ (http_met_t method);
 
 static ssize_t __parse_header__ (int fd, http_hdr_t **header);
 
+unsigned char* __dynamic_read_socket__ (int fd);
+
 static http_req_t *__http_allocate_request__ (const char *uri);
 static http_res_t *__http_allocate_response__ (const char *status_message);
 static http_hdr_t *__http_alloc_header__ (const char *name,
@@ -108,7 +110,7 @@ __http_method__ (int fd, http_des_t *dest, http_met_t method)
     http_add_header (&request->header, "Connection", "close");
     if (dest->content_len > 0 && dest->content != NULL) {
         sprintf (str, "%ld", dest->content_len);
-        http_add_header (&request->header, 
+        http_add_header (&request->header,
                          "Content-Type",
                          "application/x-www-form-urlencoded");
         http_add_header (&request->header, "Content-Length", str);
@@ -671,6 +673,7 @@ ssize_t
 http_parse_response (int fd, http_res_t **response_)
 {
     ssize_t         n;
+    unsigned char   ch;
     size_t          len;
     unsigned char  *data;
     http_res_t     *response;
@@ -748,7 +751,7 @@ http_parse_response (int fd, http_res_t **response_)
     }
     free (data);
     if (n != 1) {
-        printf ("http_parse_request: invalid line ending\n");
+        printf ("http_parse_response: invalid line ending\n");
         http_destroy_response (response);
         return -1;
     }
@@ -761,8 +764,40 @@ http_parse_response (int fd, http_res_t **response_)
     }
     len += n;
 
+    response->content_len = 0;
+    /*parse chunked data*/
+    if (http_header_get (response->header, "Transfer-Encoding")) {
+        n = __read_until__ (fd, '\n', &data);
+        if (n < 0) {
+            printf ("http_parse_response invalid content len\n");
+            http_destroy_response (response);
+        }
+        data[n - 2] = '\0';
+        response->content_len = (int) strtol (data, NULL, 16);
+        free (data);
+        len += n;
+    }
+    response->content = __dynamic_read_socket__ (fd);
+    
     *response_ = response;
     return len;
+}
+
+unsigned char* 
+__dynamic_read_socket__ (int fd)
+{
+    int             i = 0;
+    unsigned char  *body;
+    int             malloc_size = 1024;
+    int             block_size  = 1024;
+
+    body = (unsigned char*) malloc (malloc_size);
+    while (read (fd, body + (i * block_size), block_size) == block_size) {
+        i += 1;
+        malloc_size += block_size;
+        body = (unsigned char*) realloc ((void*)body, malloc_size);
+    }
+    return body;
 }
 
 void
@@ -771,6 +806,7 @@ http_destroy_response (http_res_t *response)
     if (response->status_message)
         free ((char *)response->status_message);
     __http_destroy_header__ (response->header);
+    free(response->content);
     free (response);
 }
 
