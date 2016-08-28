@@ -12,9 +12,9 @@ main (void)
     int         sockfd;
     const char *status_message;
 
-    des.host_name = "www.oschina.net";
+    des.host_name = "localhost";
     des.host_port = 80;
-    des.uri = "/";
+    des.uri = "/admin/login";
     sockfd = http_get (&des);
     if (sockfd == -1) {
         printf("error.\n");
