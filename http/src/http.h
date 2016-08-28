@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <assert.h>
 
 typedef enum
 {

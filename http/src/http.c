@@ -677,6 +677,11 @@ http_parse_response (int fd, http_res_t **response_)
     size_t          len;
     unsigned char  *data;
     http_res_t     *response;
+    int             readn;
+    unsigned char  *content;
+    int             malloc_size = 1024;
+    int             block_size  = 1024;
+    int             effiv_addr  = 0;
 
     *response_ = NULL;
 
@@ -765,20 +770,45 @@ http_parse_response (int fd, http_res_t **response_)
     len += n;
 
     response->content_len = 0;
+    
+    content = (unsigned char *) malloc(malloc_size);
     /*parse chunked data*/
     if (http_header_get (response->header, "Transfer-Encoding")) {
-        n = __read_until__ (fd, '\n', &data);
-        if (n < 0) {
-            printf ("http_parse_response invalid content len\n");
-            http_destroy_response (response);
+        while (n = __read_until__ (fd, '\n', &data)) {
+            if (n < 0) {
+                printf ("http_parse_response invalid content len\n");
+                http_destroy_response (response);
+            }
+            data[n - 2] = '\0';
+
+            if (readn = (int) strtol (data, NULL, 16)) {
+                malloc_size += readn;
+                content = (unsigned char *) realloc ((void*)content, malloc_size);
+                __read_all__(fd, content + effiv_addr, readn);
+                effiv_addr += readn;
+
+                /*unused CLRF*/
+                read (fd, &ch, 1);
+                assert (ch == '\r');
+                read (fd, &ch, 1);
+                assert (ch == '\n');
+            } else {
+                /* chunk size is 0 */
+                /*unused CLRF*/
+                read (fd, &ch, 1);
+                assert (ch == '\r');
+                read (fd, &ch, 1);
+                assert (ch == '\n');
+                break;
+            }
         }
-        data[n - 2] = '\0';
-        response->content_len = (int) strtol (data, NULL, 16);
-        free (data);
-        len += n;
+        content[effiv_addr] = '\0';
+        response->content_len = effiv_addr;
+        response->content = content;
+    } else {
+        response->content = __dynamic_read_socket__ (fd);
     }
-    response->content = __dynamic_read_socket__ (fd);
-    
+
     *response_ = response;
     return len;
 }
@@ -786,14 +816,15 @@ http_parse_response (int fd, http_res_t **response_)
 unsigned char* 
 __dynamic_read_socket__ (int fd)
 {
-    int             i = 0;
+    int             readn;
     unsigned char  *body;
     int             malloc_size = 1024;
     int             block_size  = 1024;
+    int             effiv_addr  = 0;
 
     body = (unsigned char*) malloc (malloc_size);
-    while (read (fd, body + (i * block_size), block_size) == block_size) {
-        i += 1;
+    while (readn = read (fd, body + effiv_addr, block_size)) {
+        effiv_addr += readn;
         malloc_size += block_size;
         body = (unsigned char*) realloc ((void*)body, malloc_size);
     }
