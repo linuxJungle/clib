@@ -66,10 +66,12 @@ main (void)
         pthread_join (tid[i], NULL);
     }
 
+
     /*
     printf ("start delete test...\n");
     while ((tmp = queue_get_head (&queue)) != NULL) {
         printf("%d\n", *(int*)tmp->data);
     }
     */
+    queue_destroy ();
 }

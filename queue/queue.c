@@ -1,10 +1,10 @@
-#include <pthread.h>
 #include "queue.h"
 
 static pthread_mutex_t mutex;
 
 void
-queue_init(Queue *queue) {
+queue_init (Queue *queue) {
+    pthread_mutex_init (&mutex, NULL);
     queue->head = queue->tail = NULL;
 }
 
@@ -91,5 +91,10 @@ queue_get_tail (Queue *queue) {
     pthread_mutex_unlock (&mutex);
 
     return tmp;
+}
+
+void
+queue_destroy (void) {
+    pthread_mutex_destroy(&mutex);
 }
 

@@ -25,7 +25,7 @@ typedef struct queue {
     Node *tail;
 } Queue;
 
-void queue_init(Queue *queue);
+void queue_init (Queue *queue);
 
 void queue_insert_head (Queue *queue, Node *node);
 
@@ -34,5 +34,7 @@ void queue_insert_tail (Queue *queue, Node *node);
 Node *queue_get_head (Queue *queue);
 
 Node *queue_get_tail (Queue *queue);
+
+void queue_destroy (void);
 
 #endif /* !QUEUE_H */
