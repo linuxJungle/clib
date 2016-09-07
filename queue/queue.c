@@ -4,17 +4,27 @@
 static pthread_mutex_t mutex;
 
 void
+set_block (Queue *queue) {
+    queue->is_block = 1;
+}
+
+void
 queue_init (Queue *queue, unsigned int size) {
     pthread_mutex_init (&mutex, NULL);
     queue->head = queue->tail = NULL;
     queue->init_size = size; 
     queue->curr_size = 0;
+    queue->is_block = 0;
 }
 
 void
 queue_insert_head (Queue *queue, Node *node) { 
     
-    while (queue_is_full (queue));
+    if (queue->is_block) {
+        while (queue_is_full (queue));
+    } else if (queue_is_full (queue)) {
+        return;
+    } 
 
     lock (queue);
 
@@ -36,7 +46,11 @@ queue_insert_head (Queue *queue, Node *node) {
 void
 queue_insert_tail (Queue *queue, Node *node) {
 
-    while (queue_is_full (queue));
+    if (queue->is_block) {
+        while (queue_is_full (queue));
+    } else if (queue_is_full (queue)) {
+        return;
+    } 
 
     lock (queue);
 
@@ -63,7 +77,12 @@ queue_get_head (Queue *queue) {
 
     pthread_mutex_lock (&mutex);
 
-    while (queue_is_empty (queue));
+    if (queue->is_block) {
+        while (queue_is_empty (queue));
+    } else if (queue_is_empty (queue)) {
+        pthread_mutex_unlock (&mutex);
+        return NULL;
+    }
 
     pthread_mutex_unlock (&mutex);
 
@@ -95,7 +114,12 @@ queue_get_tail (Queue *queue) {
 
     pthread_mutex_lock (&mutex);
 
-    while (queue_is_empty (queue));
+    if (queue->is_block) {
+        while (queue_is_empty (queue));
+    } else if (queue_is_empty (queue)) {
+        pthread_mutex_unlock (&mutex);
+        return NULL;
+    }
 
     pthread_mutex_unlock (&mutex);
 

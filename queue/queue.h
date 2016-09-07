@@ -30,9 +30,12 @@ typedef struct queue {
     Node         *head;
     Node         *tail;
     int           lock;
+    int           is_block;
     unsigned int  init_size;
     unsigned int  curr_size; 
 } Queue;
+
+void set_block (Queue *queue);
 
 void queue_init (Queue *queue, unsigned int size);
 

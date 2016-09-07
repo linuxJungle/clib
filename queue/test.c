@@ -42,10 +42,11 @@ main (void)
     pthread_t  tid[10000];
 
     Queue queue;
-    queue_init (&queue, 100);
+    queue_init (&queue, 130);
+    set_block(&queue);
 
 
-    for (i = 0; i < 70; i++) {
+    for (i = 0; i < 130; i++) {
         pthread_create (&tid[i], NULL, call_func, &queue);
     }
 
@@ -58,11 +59,12 @@ main (void)
 
     //printf("curr_size %d\t init_size %d\n", queue.curr_size, queue.init_size);
 
-    for (i = 0; i < 70; i++) {
+    for (i = 0; i < 130; i++) {
         pthread_join (tid[i], NULL);
     }
 
-    printf("curr_size %d\t init_size %d\n", queue.curr_size, queue.init_size);
+
+    //printf("curr_size %d\t init_size %d\n", queue.curr_size, queue.init_size);
 
     /*
     Node *tmp;
