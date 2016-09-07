@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include "queue.h"
 
+struct call_data {
+    Queue *queue;
+    Node  *node;
+};
+
 void *
 call_func (void *data)
 {
@@ -19,6 +24,15 @@ call_func (void *data)
     return NULL;
 }
 
+void *
+call_func2 (void *data) {
+
+    struct call_data * tmp = (struct call_data *) data;
+    queue_insert_head (tmp->queue, tmp->node); 
+
+    return NULL;
+}
+
 int
 main (void)
 {
@@ -28,14 +42,27 @@ main (void)
     pthread_t  tid[10000];
 
     Queue queue;
-    queue_init (&queue);
+    queue_init (&queue, 100);
 
-    for (i = 0; i < 10000; i++) {
+
+    for (i = 0; i < 70; i++) {
+        pthread_create (&tid[i], NULL, call_func, &queue);
+    }
+
+    for (i = 0; i < 130; i++) {
         data[i] = i;
         node[i].data = &data[i];
 
         queue_insert_head (&queue, &node[i]);
     }
+
+    //printf("curr_size %d\t init_size %d\n", queue.curr_size, queue.init_size);
+
+    for (i = 0; i < 70; i++) {
+        pthread_join (tid[i], NULL);
+    }
+
+    printf("curr_size %d\t init_size %d\n", queue.curr_size, queue.init_size);
 
     /*
     Node *tmp;
@@ -58,20 +85,11 @@ main (void)
     }
     */
 
-    for (i = 0; i < 10000; i++) {
-        pthread_create (&tid[i], NULL, call_func, &queue);
-    }
-
-    for (i = 0; i < 10000; i++) {
-        pthread_join (tid[i], NULL);
-    }
-
-
     /*
     printf ("start delete test...\n");
     while ((tmp = queue_get_head (&queue)) != NULL) {
         printf("%d\n", *(int*)tmp->data);
     }
     */
-    queue_destroy ();
+    queue_destroy();
 }
