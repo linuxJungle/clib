@@ -10,24 +10,62 @@ hash_table_init (HashTable *hashtable)
             HASH_TABLE_MAX_SIZE);
 }
 
-
 /* string hash function */
 unsigned int
 hash_table_hash_str (const char* skey)
 {
+    /*  
+     * This is the popular `times 33' hash algorithm which is used by  
+     * perl and also appears in Berkeley DB. This is one of the best  
+     * known hash functions for strings because it is both computed  
+     * very fast and distributes very well.  
+     *  
+     * The originator may be Dan Bernstein but the code in Berkeley DB  
+     * cites Chris Torek as the source. The best citation I have found  
+     * is "Chris Torek, Hash function for text in C, Usenet message  
+     * <27038@mimsy.umd.edu> in comp.lang.c , October, 1990." in Rich  
+     * Salz's USENIX 1992 paper about INN which can be found at  
+     * <http://citeseer.nj.nec.com/salz92internetnews.html>.  
+     *  
+     * The magic of number 33, i.e. why it works better than many other  
+     * constants, prime or not, has never been adequately explained by  
+     * anyone. So I try an explanation: if one experimentally tests all  
+     * multipliers between 1 and 256 (as I did while writing a low-level  
+     * data structure library some time ago) one detects that even  
+     * numbers are not useable at all. The remaining 128 odd numbers  
+     * (except for the number 1) work more or less all equally well.  
+     * They all distribute in an acceptable way and this way fill a hash  
+     * table with an average percent of approx. 86%.  
+     *  
+     * If one compares the chi^2 values of the variants (see  
+     * Bob Jenkins ``Hashing Frequently Asked Questions'' at  
+     * http://burtleburtle.net/bob/hash/hashfaq.html for a description  
+     * of chi^2), the number 33 not even has the best value. But the  
+     * number 33 and a few other equally good numbers like 17, 31, 63,  
+     * 127 and 129 have nevertheless a great advantage to the remaining  
+     * numbers in the large set of possible multipliers: their multiply  
+     * operation can be replaced by a faster operation based on just one  
+     * shift plus either a single addition or subtraction operation. And  
+     * because a hash function has to both distribute good _and_ has to  
+     * be very fast to compute, those few numbers should be preferred.  
+     *  
+     *                  -- Ralf S. Engelschall <rse@engelschall.com>  
+     */   
     const char   *p;
-    unsigned int  h;
+    unsigned int  hash;
 
     p = (const char*)skey;
-    h = *p;
-    if (h) {
+    hash = *p;
+    if (hash) {
         for (p += 1; *p != '\0'; p++)
-            h = (h << 5) - h + *p;
+            hash = (hash << 5) - hash + *p;
     }
-    return h;
+    return hash;
 }
 
-/*insert key-value into hash table*/
+/*insert key-value into hash table, if key is exist, 
+ *it will overwrite old value, use link list to slove 
+ *hash conflict,*/
 void
 hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
 {
@@ -36,7 +74,7 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
     HashNode       *pNewNode;
 
     if (hashTable_is_full (hashtable)) {
-        printf("out of hash table memory!\n");
+        fprintf(stderr, "out of hash table memory!\n");
         return;
     }
     pos = hash_pos (skey);
@@ -44,7 +82,7 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
     pHead = (hashtable->hashnode)[pos];
     while (pHead) {
         if (strcmp (pHead->sKey, skey) == 0) {
-            printf ("%s already exists!\n", skey);
+            zIntegerValue (pHead) = nvalue;
             return ;
         }
         pHead = pHead->pNext;
@@ -55,7 +93,7 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
     pNewNode->sKey = mallocStr (skey);
     strcpy (pNewNode->sKey, skey);
 
-    pNewNode->pValue = (zValue *) malloc (sizeof(zValue));
+    pNewNode->pValue = (void *) malloc (sizeof(zValue));
     zIntegerValue (pNewNode) = nvalue;
     pNewNode->type = INTEGER;
 
@@ -73,7 +111,7 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     HashNode       *pNewNode;
 
     if (hashTable_is_full (hashtable)) {
-        printf("out of hash table memory!\n");
+        fprintf(stderr, "out of hash table memory!\n");
         return;
     }
     pos = hash_pos (skey);
@@ -81,7 +119,8 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     pHead =  (hashtable->hashnode)[pos];
     while (pHead) {
         if (strcmp (pHead->sKey, skey) == 0) {
-            printf ("%s already exists!\n", skey);
+            strcpy (zStrValue (pHead), pValue);
+            zStrLen (pHead) = strlen (pValue);
             return ;
         }
         pHead = pHead->pNext;
@@ -112,7 +151,7 @@ hash_table_insert_bool (HashTable *hashtable, const char* skey, bool value)
     HashNode       *pNewNode;
 
     if (hashTable_is_full (hashtable)) {
-        printf("out of hash table memory!\n");
+        fprintf(stderr, "out of hash table memory!\n");
         return;
     }
     pos = hash_pos (skey);
@@ -120,7 +159,7 @@ hash_table_insert_bool (HashTable *hashtable, const char* skey, bool value)
     pHead =  (hashtable->hashnode)[pos];
     while (pHead) {
         if (strcmp (pHead->sKey, skey) == 0) {
-            printf ("%s already exists!\n", skey);
+            zIntegerValue (pHead) = value? 1: 0;
             return ;
         }
         pHead = pHead->pNext;
@@ -211,13 +250,13 @@ hash_node_print (HashNode *hashnode) {
     switch (hashnode->type) {
 
     case INTEGER:
-        printf ("%s => INTEGER(%ld)", hashnode->sKey, zIntegerValue (hashnode));
+        printf ("%s => INTEGER(%ld)\n", hashnode->sKey, zIntegerValue (hashnode));
         break;
     case STRING:
-        printf ("%s => STRING(%ld) %s", hashnode->sKey, zStrLen(hashnode), zStrValue (hashnode));
+        printf ("%s => STRING(%ld) %s\n", hashnode->sKey, zStrLen(hashnode), zStrValue (hashnode));
         break;
     case BOOL:
-        printf ("%s => BOOL(%s)", hashnode->sKey, zIntegerValue (hashnode)? "true": "false");
+        printf ("%s => BOOL(%s)\n", hashnode->sKey, zIntegerValue (hashnode)? "true": "false");
     default:
         break;
     }
@@ -238,7 +277,6 @@ hash_table_print (HashTable *hashtable)
             hashNode_for_each (pHead) {
                 hash_node_print (pHead);
             }
-            printf("\n");
         }
 }
 

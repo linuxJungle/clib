@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define HASH_TABLE_MAX_SIZE 10000
+#define HASH_TABLE_MAX_SIZE (1 << 13)
 
 #define hash_pos(skey) \
     hash_table_hash_str((skey)) % HASH_TABLE_MAX_SIZE
@@ -28,7 +28,7 @@
     (hashtable)->hash_table_max_size
 
 #define zvalue(hashnode) \
-    (hashnode)->pValue->value
+    ((zValue *)(hashnode)->pValue)->value
 
 #define zStrValue(hashnode) \
     (zvalue(hashnode)).string.value
@@ -62,7 +62,7 @@ typedef struct zvalue {
 typedef struct hashnode HashNode;
 struct hashnode {
     char      *sKey;
-    zValue    *pValue;
+    void      *pValue;
     Type       type;
     HashNode  *pNext;
 };
