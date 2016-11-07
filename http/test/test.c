@@ -14,7 +14,7 @@ main (void)
 
     des.host_name = "localhost";
     des.host_port = 80;
-    des.uri = "/a.php";
+    des.uri = "/admin/login";
     sockfd = http_get (&des);
     if (sockfd == -1) {
         printf("error.\n");
@@ -23,7 +23,12 @@ main (void)
     http_parse_response (sockfd, &res);
     code = res->status_code;
     status_message = res->status_message;
-    printf("%d\t%s\n", code, status_message);
+    http_hdr_t *header = res->header;
+    const char *value = http_header_get(header, "Server");
+    size_t content_len = res->content_len;
+    const char *content = res->content;
+    printf("%d\t%s\t%s\t%d\n", code, status_message, value, content_len);
+    printf("%s\n", content);
 
     http_destroy_response(res);
 
