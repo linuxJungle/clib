@@ -9,7 +9,7 @@
 #define LOGGER_H
 
 #define FORMATTER_TO_STR(format) "FORMATTER_"#format
-#include "list.h"
+#include <list/list.h>
 #define BUF_SIZE 1024
 
 typedef enum {

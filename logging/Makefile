@@ -4,7 +4,7 @@
 #
 
 all:
-	gcc -I../list logger.c test.c ../list/list.c -o a.out
+	gcc -I../ logger.c test.c ../list/list.c -o a.out
 
 
 # vim:ft=make

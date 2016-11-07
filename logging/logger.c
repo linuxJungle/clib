@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "logger.h"
-#include "list.h"
+#include <list/list.h>
 #include <time.h>
 
 const char *FORMATTER_IDENTIFIERS[NUMBER_OF_FORMATTER_OPTIONS] = {
