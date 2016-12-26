@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define HASH_TABLE_MAX_SIZE (1 << 8)
+#define HASH_TABLE_MAX_SIZE (1 << 10)
 
 #define hash_pos(skey) \
-    hash_table_hash_str((skey)) % HASH_TABLE_MAX_SIZE
+    hash_func((skey)) % HASH_TABLE_MAX_SIZE
 
 #define hashTable_is_full(hashtable) \
     (((hashtable)->hash_size) > ((hashtable)->hash_table_max_size))
@@ -43,11 +43,15 @@
     (zvalue(hashnode)).dval
 
 #define mallocStr(str) \
-    (char*) calloc (sizeof(char), strlen (str) + 1)
+    (char*) malloc (strlen (str) + 1)
 
 #define set_zlval(hashnode, lval) \
     { zlval ((hashnode)) = lval;  \
     (hashnode)->type   = LONG; }
+
+#define set_key(hashnode, str)            \
+    { (hashnode)->sKey = mallocStr (str); \
+      strcpy ((hashnode)->sKey, str); }
 
 #define set_zStrval(hashnode, str)            \
     { zStrValue (hashnode) = mallocStr (str); \
@@ -112,7 +116,9 @@ typedef struct hashtable {
 
 void hash_table_init (HashTable *hashtable);
 
-unsigned int hash_table_hash_str (const char* skey);
+/* unsigned int hash_table_hash_str (const char* skey); */
+
+unsigned long hash_func (const char* skey);
 
 void hash_table_insert_long (HashTable *hashtable, 
         const char* skey, long nvalue);

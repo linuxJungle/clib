@@ -1,13 +1,41 @@
 #include "hashtable.h"
 
-static void __free_str_value (HashNode *node);
+static inline void __free_str_value (HashNode *node);
+static inline void __die__ (const char* error);
+static void __free_hashnode__ (HashNode *node);
 
 /*if key is exists and type is STRING, free string's value memory*/
-void __free_str_value (HashNode *node)
+inline void 
+__free_str_value (HashNode *node)
 {
-    if (node->type == STRING) free (zStrValue (node));
+    if (node->type == STRING) free(zStrValue(node));
 }
 
+inline void 
+__die__ (const char* error) {
+    fprintf (stderr, error);
+    exit (-1);
+}
+
+void
+__free_hashnode__ (HashNode *node)
+{
+    free (node->sKey);          /* free key */
+    switch (node->type) {
+    
+    case LONG:
+    case BOOL:
+    case DOUBLE:
+        break;
+    case STRING:
+        __free_str_value(node); /*if value is string, free value*/
+        break;
+    default:
+        break;
+    }    
+    free (node->pValue);      /* free zvalue struct */
+    free (node);                /* free current hashnode */
+}
 
 /* initialize hash table */
 void
@@ -19,6 +47,7 @@ hash_table_init (HashTable *hashtable)
             HASH_TABLE_MAX_SIZE);
 }
 
+#if 0
 /* string hash function */
 unsigned int
 hash_table_hash_str (const char* skey)
@@ -71,6 +100,39 @@ hash_table_hash_str (const char* skey)
     }
     return hash;
 }
+#endif
+
+inline unsigned long 
+hash_func (const char *arKey)
+{
+    size_t nKeyLength = strlen(arKey);
+    register unsigned long hash = 5381;
+
+    /* variant with the hash unrolled eight times */
+    for (; nKeyLength >= 8; nKeyLength -= 8) {
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+        hash = ((hash << 5) + hash) + *arKey++;
+    }
+    switch (nKeyLength) {
+        case 7: hash = ((hash << 5) + hash) + *arKey++; /* fallthrough... */
+        case 6: hash = ((hash << 5) + hash) + *arKey++; /* fallthrough... */
+        case 5: hash = ((hash << 5) + hash) + *arKey++; /* fallthrough... */
+        case 4: hash = ((hash << 5) + hash) + *arKey++; /* fallthrough... */
+        case 3: hash = ((hash << 5) + hash) + *arKey++; /* fallthrough... */
+        case 2: hash = ((hash << 5) + hash) + *arKey++; /* fallthrough... */
+        case 1: hash = ((hash << 5) + hash) + *arKey++; break;
+        case 0: break;
+    }
+
+    return hash;
+}
+
 
 /*insert key-value into hash table, if key is exist, 
  *it will overwrite old value, use link list to slove 
@@ -79,34 +141,32 @@ void
 hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
 {
     size_t          pos;
-    HashNode       *pHead;
+    HashNode       *pHead, *pLast;
     HashNode       *pNewNode;
 
-    if (hashTable_is_full (hashtable)) {
-        fprintf(stderr, "out of hash table memory!\n");
-        return;
-    }
+    pHead = pLast = NULL;
     pos = hash_pos (skey);
-
     pHead = (hashtable->hashnode)[pos];
-    while (pHead) {
-        if (strcmp (pHead->sKey, skey) == 0) {
-            __free_str_value (pHead);
-            r_set_zlval (pHead, nvalue);
+    if (pHead) {
+        while (pHead) {
+            if (strcmp (pHead->sKey, skey) == 0) {
+                __free_str_value (pHead);
+                r_set_zlval (pHead, nvalue);
+            }
+            pLast = pHead;
+            pHead = pHead->pNext;
         }
-        pHead = pHead->pNext;
     }
-
-    pNewNode = (HashNode*) calloc (sizeof (HashNode), 1);
-
-    pNewNode->sKey = mallocStr (skey);
-    strcpy (pNewNode->sKey, skey);
-
+    pNewNode = (HashNode*) malloc (sizeof (HashNode));
+    set_key (pNewNode, skey);
     pNewNode->pValue = (void *) malloc (sizeof(zValue));
     set_zlval (pNewNode, nvalue);
-
-    pNewNode->pNext = (hashtable->hashnode)[pos];
-    (hashtable->hashnode)[pos] = pNewNode;
+    pNewNode->pNext = NULL;
+    if (pLast) {
+        pLast->pNext = pNewNode;
+    } else {
+        (hashtable->hashnode)[pos] = pNewNode;
+    }
 
     hashtable->hash_size++;
 }
@@ -115,34 +175,32 @@ void
 hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
 {
     size_t          pos;
-    HashNode       *pHead;
     HashNode       *pNewNode;
+    HashNode       *pHead, *pLast;
 
-    if (hashTable_is_full (hashtable)) {
-        fprintf(stderr, "out of hash table memory!\n");
-        return;
-    }
+    pHead = pLast = NULL;
     pos = hash_pos (skey);
-
-    pHead =  (hashtable->hashnode)[pos];
-    while (pHead) {
-        if (strcmp (pHead->sKey, skey) == 0) {
-            __free_str_value (pHead);
-            r_set_zStrval (pHead, pValue);
+    pHead = (hashtable->hashnode)[pos];
+    if (pHead) {
+        while (pHead) {
+            if (strcmp (pHead->sKey, skey) == 0) {
+                __free_str_value (pHead);
+                r_set_zStrval (pHead, pValue);      /*set then return*/
+            }
+            pLast = pHead;                          /*lastest hashnode*/
+            pHead = pHead->pNext;
         }
-        pHead = pHead->pNext;
-    }
-
-    pNewNode = (HashNode*) calloc (sizeof (HashNode), 1);
-
-    pNewNode->sKey = mallocStr (skey);
-    strcpy (pNewNode->sKey, skey);
-
-    pNewNode->pValue = (zValue *) malloc (sizeof(zValue));
+    } 
+    pNewNode = (HashNode*) malloc (sizeof (HashNode));
+    set_key (pNewNode, skey);
+    pNewNode->pValue = (zValue *) malloc (sizeof (zValue));
     set_zStrval (pNewNode, pValue);
-
-    pNewNode->pNext = (hashtable->hashnode)[pos];
-    (hashtable->hashnode)[pos] = pNewNode;
+    pNewNode->pNext = NULL;
+    if (pLast) {
+        pLast->pNext = pNewNode;
+    } else {
+        (hashtable->hashnode)[pos] = pNewNode;
+    }
 
     hashtable->hash_size++;
 }
@@ -151,34 +209,32 @@ void
 hash_table_insert_bool (HashTable *hashtable, const char* skey, bool value)
 {
     size_t          pos;
-    HashNode       *pHead;
+    HashNode       *pHead, *pLast;
     HashNode       *pNewNode;
 
-    if (hashTable_is_full (hashtable)) {
-        fprintf(stderr, "out of hash table memory!\n");
-        return;
-    }
+    pHead = pLast = NULL;
     pos = hash_pos (skey);
-
     pHead =  (hashtable->hashnode)[pos];
-    while (pHead) {
-        if (strcmp (pHead->sKey, skey) == 0) {
-            __free_str_value (pHead);
-            r_set_zbval (pHead, value);
+    if (pHead) {
+        while (pHead) {
+            if (strcmp (pHead->sKey, skey) == 0) {
+                __free_str_value (pHead);
+                r_set_zbval (pHead, value);
+            }
+            pLast = pHead;
+            pHead = pHead->pNext;
         }
-        pHead = pHead->pNext;
     }
-
-    pNewNode = (HashNode*) calloc (sizeof (HashNode), 1);
-
-    pNewNode->sKey = mallocStr (skey);
-    strcpy (pNewNode->sKey, skey);
-
+    pNewNode = (HashNode*) malloc (sizeof (HashNode));
+    set_key (pNewNode, skey);
     pNewNode->pValue = (zValue *) malloc (sizeof(zValue));
     set_zbval (pNewNode, value);
-
-    pNewNode->pNext = (hashtable->hashnode)[pos];
-    (hashtable->hashnode)[pos] = pNewNode;
+    pNewNode->pNext = NULL;
+    if (pLast) {
+        pLast->pNext = pNewNode;
+    } else {
+        (hashtable->hashnode)[pos] = pNewNode;
+    }
 
     hashtable->hash_size++;
 }
@@ -187,50 +243,46 @@ void
 hash_table_insert_double (HashTable *hashtable, const char* skey, double dval)
 {
     size_t          pos;
-    HashNode       *pHead;
+    HashNode       *pHead, *pLast;
     HashNode       *pNewNode;
 
-    if (hashTable_is_full (hashtable)) {
-        fprintf(stderr, "out of hash table memory!\n");
-        return;
-    }
+    pHead = pLast = NULL;
     pos = hash_pos (skey);
-
-    pHead =  (hashtable->hashnode)[pos];
-    while (pHead) {
-        if (strcmp (pHead->sKey, skey) == 0) {
-            __free_str_value (pHead);
-            r_set_zdval (pHead, dval);
+    pHead = (hashtable->hashnode)[pos];
+    if (pHead) {
+        while (pHead) {
+            if (strcmp (pHead->sKey, skey) == 0) {
+                __free_str_value (pHead);
+                r_set_zdval (pHead, dval);
+            }
+            pLast = pHead;
+            pHead = pHead->pNext;
         }
-        pHead = pHead->pNext;
     }
-
-    pNewNode = (HashNode*) calloc (sizeof (HashNode), 1);
-
-    pNewNode->sKey = mallocStr (skey);
-    strcpy (pNewNode->sKey, skey);
-
+    pNewNode = (HashNode*) malloc (sizeof (HashNode));
+    set_key (pNewNode, skey);
     pNewNode->pValue = (zValue *) malloc (sizeof(zValue));
     set_zdval (pNewNode, dval);
-
-    pNewNode->pNext = (hashtable->hashnode)[pos];
-    (hashtable->hashnode)[pos] = pNewNode;
+    pNewNode->pNext = NULL;
+    if (pLast) {
+        pLast->pNext = pNewNode;
+    } else {
+        (hashtable->hashnode)[pos] = pNewNode;
+    }
 
     hashtable->hash_size++;
 }
 
-/*remove key-value frome the hash table*/
+/*remove key-value from the hash table*/
 void
 hash_table_remove (HashTable *hashtable, const char* skey)
 {
-    unsigned int    pos;
+    size_t     pos;
+    HashNode  *pHead, *pLast, *pRemove;
 
+    pHead = pLast = pRemove = NULL;
     pos = hash_pos (skey);
-    if (hashtable->hashnode[pos]) {
-        HashNode* pHead = (hashtable->hashnode)[pos];
-        HashNode* pLast = NULL;
-        HashNode* pRemove = NULL;
-
+    if ( (pHead = hashtable->hashnode[pos]) ) {
         while (pHead) {
             if (strcmp (skey, pHead->sKey) == 0) {
                 pRemove = pHead;
@@ -239,30 +291,14 @@ hash_table_remove (HashTable *hashtable, const char* skey)
             pLast = pHead;
             pHead = pHead->pNext;
         }
-        if (pRemove) {
-            if (pLast)
-                pLast->pNext = pRemove->pNext;
-            else 
-                (hashtable->hashnode)[pos] = NULL;
+        if (pLast)                   /* first node is not the want to remove hashnode*/
+            pLast->pNext = pRemove->pNext;
+        else 
+            (hashtable->hashnode)[pos] = NULL;
 
-            switch (pRemove->type) {
-
-            case LONG:
-            case BOOL:
-            case DOUBLE:
-                break;
-            case STRING:
-                free (zStrValue (pRemove));
-                break;
-            default:
-                break;
-            }
-            hashtable->hash_size--;
-
-            free (pRemove->pValue);
-            free (pRemove->sKey);
-            free (pRemove);
-        }
+        __free_hashnode__ (pRemove);
+    } else {
+        __die__ ("key is not exist.");
     }
 }
 
@@ -271,11 +307,11 @@ HashNode*
 hash_table_lookup (HashTable *hashtable, const char* skey)
 {
     unsigned int    pos;
+    HashNode        *pHead;
 
     pos = hash_pos (skey);
 
-    if ((hashtable->hashnode)[pos]) {
-        HashNode* pHead = (hashtable->hashnode)[pos];
+    if ( (pHead = (hashtable->hashnode)[pos]) ) {
         while (pHead) {
             if (strcmp (skey, pHead->sKey) == 0)
                 return pHead;
@@ -307,7 +343,7 @@ hash_node_print (HashNode *hashnode) {
 }
          
 
-/*print the content in the hash table*/
+/* print the content in the hash table */
 void 
 hash_table_print (HashTable *hashtable)
 {
@@ -315,43 +351,26 @@ hash_table_print (HashTable *hashtable)
     HashNode  *pHead; 
 
     for (i = 0; i < hashTable_max_size (hashtable); i++)
-        if ((hashtable->hashnode)[i]) {
-            pHead = (hashtable->hashnode)[i];
-            //printf ("%ld => ", i);
+        if ( (pHead = (hashtable->hashnode)[i]) ) {
             hashNode_for_each (pHead) {
                 hash_node_print (pHead);
             }
         }
 }
 
-/*free the memory of the hash table*/
+/* free the memory of the hash table */
 void
 hash_table_release (HashTable *hashtable)
 {
     size_t      i;
-    HashNode   *pHead, *pTemp;
+    HashNode   *pHead, *pFree;
 
-    for (i = 0; i < hashtable->hash_table_max_size; i++) {
+    for (i = 0; i < hashTable_max_size (hashtable); i++) {
         if ((pHead = (hashtable->hashnode)[i])) {
             while (pHead) {
-                pTemp = pHead;
+                pFree = pHead;
                 pHead = pHead->pNext;
-                if (pTemp) {
-                    switch (pTemp->type) {
-                    
-                    case LONG:
-                    case BOOL:
-                    case DOUBLE:
-                        break;
-                    case STRING:
-                        free (zStrValue (pTemp));
-                        break;
-                    default:
-                        break;
-                    }    
-                    free (pTemp->sKey);
-                    free (pTemp);
-                }
+                __free_hashnode__ (pFree);
             }
         }
     }
