@@ -86,6 +86,8 @@ queue_get_head (Queue *queue) {
 
     pthread_mutex_unlock (&mutex);
 
+    lock (queue);
+
     if ( (tmp = queue->head) != NULL) {
         if ( (next = tmp->next) != NULL) {
             next->pre = NULL;
@@ -93,11 +95,7 @@ queue_get_head (Queue *queue) {
         } else {
             queue->head = queue->tail = NULL;
         }
-    } else {
-        unlock (queue);
-        while (queue_is_empty (queue));
-        lock (queue);
-    }
+    } 
 
     queue->curr_size--;
 
