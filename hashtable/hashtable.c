@@ -3,6 +3,8 @@
 static inline void __free_str_value (HashNode *node);
 static inline void __die__ (const char* error);
 static void __free_hashnode__ (HashNode *node);
+static inline void __hash_rehash__ (HashNode **newHashNode, \
+        size_t pos, HashNode* pNewHead, HashNode* pOldHead);
 static void __hash_table_rehash__ (HashTable *hashtable);
 
 /*if key is exists and type is STRING, free string's value memory*/
@@ -19,7 +21,8 @@ __die__ (const char* error) {
 }
 
 void
-__hash_rehash__ (HashNode **newHashNode, size_t pos, HashNode* pNewHead, HashNode* pOldHead)
+__hash_rehash__ (HashNode **newHashNode, size_t pos, 
+        HashNode* pNewHead, HashNode* pOldHead)
 {
     HashNode  *pNewLast;
 
@@ -39,7 +42,7 @@ void
 __hash_table_rehash__ (HashTable *hashtable)
 {
     size_t     i, pos, hash_old_size;
-    HashNode  *pOldHead, *pNewHead;
+    HashNode   *pOldHead, *pNewHead;
     HashNode   **newHashNode;
 
     hash_old_size = hashtable->hash_table_max_size;
