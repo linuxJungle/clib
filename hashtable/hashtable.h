@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define HASH_TABLE_MAX_SIZE (1 << 10)
+#define HASH_TABLE_MAX_SIZE (1 << 5)
 
-#define hash_pos(skey) \
-    hash_func((skey)) % HASH_TABLE_MAX_SIZE
+#define hash_pos(skey, hash_table_size) \
+    ((hash_func((skey))) % hash_table_size)
 
 #define hashTable_is_full(hashtable) \
     (((hashtable)->hash_size) > ((hashtable)->hash_table_max_size))
@@ -25,61 +25,86 @@
     ((hashtable)->hash_size)
 
 #define hashTable_max_size(hashtable) \
-    (hashtable)->hash_table_max_size
+    ((hashtable)->hash_table_max_size)
 
 #define zvalue(hashnode) \
-    ((zValue *)(hashnode)->pValue)->value
+    (((zValue *)(hashnode)->pValue)->value)
 
 #define zStrValue(hashnode) \
-    (zvalue(hashnode)).str.value
+    ((zvalue(hashnode)).str.value)
 
 #define zStrLen(hashnode) \
-    (zvalue(hashnode)).str.len
+    ((zvalue(hashnode)).str.len)
 
 #define zlval(hashnode) \
-    (zvalue(hashnode)).lval
+    ((zvalue(hashnode)).lval)
 
 #define zdval(hashnode) \
-    (zvalue(hashnode)).dval
+    ((zvalue(hashnode)).dval)
 
 #define mallocStr(str) \
     (char*) malloc (strlen (str) + 1)
 
-#define set_zlval(hashnode, lval) \
-    { zlval ((hashnode)) = lval;  \
-    (hashnode)->type   = LONG; }
+#define set_zlval(hashnode, lval)           \
+    do {                                    \
+        zlval ((hashnode)) = lval;          \
+        (hashnode)->type   = LONG;          \
+    } while(0)
 
-#define set_key(hashnode, str)            \
-    { (hashnode)->sKey = mallocStr (str); \
-      strcpy ((hashnode)->sKey, str); }
+#define set_key(hashnode, str)              \
+    do {                                    \
+        (hashnode)->sKey = mallocStr (str); \
+        strcpy ((hashnode)->sKey, str);     \
+    } while(0)
 
-#define set_zStrval(hashnode, str)            \
-    { zStrValue (hashnode) = mallocStr (str); \
-    strcpy (zStrValue (hashnode), str);       \
-    zStrLen (hashnode) = strlen (str);        \
-    (hashnode)->type = STRING; }
+#define set_zStrval(hashnode, str)                \
+    do {                                          \
+        zStrValue (hashnode) = mallocStr (str);   \
+        strcpy (zStrValue (hashnode), str);       \
+        zStrLen (hashnode) = strlen (str);        \
+        (hashnode)->type = STRING;                \
+    } while(0)
 
-#define Bool(bval) (bval)? 1: 0;
+#define Bool(bval) ((bval)? 1: 0)
 
-#define set_zbval(hashnode, bval)    \
-    { zlval (hashnode) = Bool(bval); \
-      (hashnode)->type = BOOL; }
+#define set_zbval(hashnode, bval)      \
+    do {                               \
+        zlval (hashnode) = Bool(bval); \
+        (hashnode)->type = BOOL;       \
+    } while(0)
 
 #define set_zdval(hashnode, dval) \
-    { zdval (hashnode) = (dval);  \
-      (hashnode)->type = DOUBLE; }
+    do {                               \
+        zdval (hashnode) = (dval);     \
+        (hashnode)->type = DOUBLE;     \
+    } while(0)
 
-#define r_set_zStrval(hashnode, str) \
-    set_zStrval((hashnode), (str)) return;
+#define r_set_zStrval(hashnode, str)      \
+    do {                                  \
+        set_zStrval((hashnode), (str));   \
+        return;                           \
+    } while(0)
 
-#define r_set_zlval(hashnode, lval) \
-    set_zlval((hashnode), (lval)) return;
+#define r_set_zlval(hashnode, lval)       \
+    do {                                  \
+        set_zlval((hashnode), (lval));    \
+        return;                           \
+    } while(0)
 
 #define r_set_zbval(hashnode, bval) \
-    set_zbval((hashnode), (bval)) return;
+    do {                                  \
+        set_zbval((hashnode), (bval));    \
+        return;                           \
+    } while(0)
 
-#define r_set_zdval(hashnode, dval) \
-    set_zdval((hashnode), (dval)) return;
+#define r_set_zdval(hashnode, dval)       \
+    do {                                  \
+        set_zdval((hashnode), (dval));    \
+        return;                           \
+    } while(0)
+
+#define hash_table_is_rehashing(hashtable) \
+    (((hashtable)->hash_size) > ((((hashtable)->hash_table_max_size)*75/100)))
 
 
 typedef enum {
@@ -133,6 +158,7 @@ void hash_table_insert_double (HashTable *hashtable,
         const char* skey, double dval);
 
 void hash_table_remove (HashTable *hashtable, const char* skey);
+
 
 HashNode* hash_table_lookup (HashTable *hashtable, const char* skey);
 
