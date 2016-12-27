@@ -21,10 +21,9 @@ __die__ (const char* error) {
 void
 __hash_rehash__ (HashNode **newHashNode, size_t pos, HashNode* pNewHead, HashNode* pOldHead)
 {
-    HashNode  *pNewLast, *pTemp;
+    HashNode  *pNewLast;
 
-    pTemp = pOldHead;                    /* anywhere point node's next pointer to NULL */
-    pTemp->pNext = NULL;
+    pOldHead->pNext = NULL;
 
     if (pNewHead) {
         do {
@@ -50,9 +49,18 @@ __hash_table_rehash__ (HashTable *hashtable)
     for (i = 0; i < hash_old_size; i++) {
         if ((pOldHead = (hashtable->hashnode)[i])) {
             hashNode_for_each (pOldHead) {
+                /* copy current node, set the next pointer point NULL */
+                HashNode *pTemp = (HashNode *)malloc(sizeof(HashNode));  
+                *pTemp = *pOldHead;
+                pTemp->pNext = NULL;
+
                 pos = hash_pos (pOldHead->sKey, hashtable->hash_table_max_size);
                 pNewHead = newHashNode[pos];
-                __hash_rehash__(newHashNode, pos, pNewHead, pOldHead);
+                __hash_rehash__(newHashNode, pos, pNewHead, pTemp);
+            }
+            /* free current node hlist */
+            hashNode_for_each (pOldHead) {
+                __free_hashnode__(pOldHead);
             }
         }
     }
@@ -233,19 +241,14 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     pHead = (hashtable->hashnode)[pos];
     if (pHead) {
         while (pHead) {
-            printf("%s\t%s\t", pHead->sKey, skey);
             if (strcmp (pHead->sKey, skey) == 0) {
-                printf("match\n");
                 __free_str_value (pHead);
                 r_set_zStrval (pHead, pValue);      /*set then return*/
             }
-            printf("not match");
             pLast = pHead;                          /*lastest hashnode*/
             pHead = pHead->pNext;
-            printf("\n");
         }
     } 
-    printf("===%s===\n", skey);
     pNewNode = (HashNode*) malloc (sizeof (HashNode));
     set_key (pNewNode, skey);
     pNewNode->pValue = (zValue *) malloc (sizeof (zValue));
@@ -256,7 +259,6 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     } else {
         (hashtable->hashnode)[pos] = pNewNode;
     }
-
     hashtable->hash_size++;
 }
 

@@ -14,7 +14,7 @@ main (void)
     }
     printf ("hashtable size = %ld\thashtable max size = %ld\n", hashTable_size (hashtable), hashtable->hash_table_max_size);
     hash_table_insert_long (hashtable, "ijklmnopqrstuvwxyz", 222);
-    hash_table_insert_long (hashtable, "klmnopqrstuvwxyz", 222);
+    hash_table_insert_str (hashtable, "klmnopqrstuvwxyz", "222");
     hash_table_insert_long (hashtable, "opqrstuvwxyz", 222);
     printf ("hashtable size = %ld\thashtable max size = %ld\n", hashTable_size (hashtable), hashtable->hash_table_max_size);
 
