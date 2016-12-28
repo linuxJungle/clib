@@ -9,8 +9,10 @@ main (void)
 
     char buf[4096];
     int i = 0;
+    srand((unsigned)time(0));
     for(i = 0; i < 10000000; i++) {
-        sprintf(buf, "%d", i);
+        sprintf(buf, "%d", rand());
+        printf("%s\n", buf);
         hash_table_insert_str (hashtable, buf, buf);
     } 
     //char *key = "1234567890abcdefghijklmnopqrstuvwxyz";
@@ -35,14 +37,14 @@ main (void)
 
     //hash_table_print (hashtable);
 
-    //HashNode * node = hash_table_lookup (hashtable, "world");
-    //if (node)
-    //    hash_node_print (node);
-    //else
-    //    printf ("key not exists\n");
+    HashNode * node = hash_table_lookup (hashtable, "1111");
+    if (node)
+        hash_node_print (node);
+    else
+        printf ("key not exists\n");
 
     printf ("hashtable size = %ld\thashtable max size = %ld\n", hashTable_size (hashtable), hashtable->hash_table_max_size);
-    //hash_table_remove (hashtable, "z");
+    hash_table_remove (hashtable, "z");
 
     //printf("----------------\n");
 

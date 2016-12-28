@@ -61,7 +61,7 @@ __hash_table_rehash__ (HashTable *hashtable)
         if ((pOldHead = (hashtable->hashnode)[i])) {
             hashNode_for_each (pOldHead) {
                 HashNode *clonedHashnode = __deep_clone_hashnode__(pOldHead);
-                pos = hash_pos (pOldHead->sKey, hashTable_max_size(hashtable));
+                pos = hash_pos (pOldHead->hash, hashtable);
                 __hash_rehash__ (newHashNode, pos, newHashNode[pos], clonedHashnode);
             }
             free_hlist (pOldHead);
@@ -186,13 +186,15 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
     size_t          pos;
     HashNode       *pHead, *pLast;
     HashNode       *pNewNode;
+    unsigned long   hashKey;
 
     if (hash_table_is_rehashing(hashtable)) {
         __hash_table_rehash__(hashtable);
     }
 
     pHead = pLast = NULL;
-    pos = hash_pos (skey, hashtable->hash_table_max_size);
+    hashKey = hash(skey);
+    pos = hash_pos (hashKey, hashtable);
     pHead = (hashtable->hashnode)[pos];
     if (pHead) {
         while (pHead) {
@@ -209,6 +211,8 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
     pNewNode->pValue = (void *) malloc (sizeof(zValue));
     set_zlval (pNewNode, nvalue);
     pNewNode->pNext = NULL;
+    pNewNode->hash = hashKey;
+
     if (pLast) {
         pLast->pNext = pNewNode;
     } else {
@@ -223,13 +227,15 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     size_t          pos;
     HashNode       *pNewNode;
     HashNode       *pHead, *pLast;
+    unsigned long   hashKey;
 
     if (hash_table_is_rehashing(hashtable)) {
         __hash_table_rehash__(hashtable);
     }
 
     pHead = pLast = NULL;
-    pos = hash_pos (skey, hashtable->hash_table_max_size);
+    hashKey = hash(skey);
+    pos = hash_pos (hashKey, hashtable);
     pHead = (hashtable->hashnode)[pos];
     if (pHead) {
         while (pHead) {
@@ -246,6 +252,7 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     pNewNode->pValue = (zValue *) malloc (sizeof (zValue));
     set_zStrval (pNewNode, pValue);
     pNewNode->pNext = NULL;
+    pNewNode->hash = hashKey;
     if (pLast) {
         pLast->pNext = pNewNode;
     } else {
@@ -260,13 +267,15 @@ hash_table_insert_bool (HashTable *hashtable, const char* skey, bool value)
     size_t          pos;
     HashNode       *pHead, *pLast;
     HashNode       *pNewNode;
+    unsigned long   hashKey;
 
     if (hash_table_is_rehashing(hashtable)) {
         __hash_table_rehash__(hashtable);
     }
 
     pHead = pLast = NULL;
-    pos = hash_pos (skey, hashtable->hash_table_max_size);
+    hashKey = hash(skey);
+    pos = hash_pos (hashKey, hashtable);
     pHead =  (hashtable->hashnode)[pos];
     if (pHead) {
         while (pHead) {
@@ -282,6 +291,7 @@ hash_table_insert_bool (HashTable *hashtable, const char* skey, bool value)
     set_key (pNewNode, skey);
     pNewNode->pValue = (zValue *) malloc (sizeof(zValue));
     set_zbval (pNewNode, value);
+    pNewNode->hash = hashKey;
     pNewNode->pNext = NULL;
     if (pLast) {
         pLast->pNext = pNewNode;
@@ -298,13 +308,15 @@ hash_table_insert_double (HashTable *hashtable, const char* skey, double dval)
     size_t          pos;
     HashNode       *pHead, *pLast;
     HashNode       *pNewNode;
+    unsigned long   hashKey;
 
     if (hash_table_is_rehashing(hashtable)) {
         __hash_table_rehash__(hashtable);
     }
 
     pHead = pLast = NULL;
-    pos = hash_pos (skey, hashtable->hash_table_max_size);
+    hashKey = hash(skey);
+    pos = hash_pos (hashKey, hashtable);
     pHead = (hashtable->hashnode)[pos];
     if (pHead) {
         while (pHead) {
@@ -321,6 +333,7 @@ hash_table_insert_double (HashTable *hashtable, const char* skey, double dval)
     pNewNode->pValue = (zValue *) malloc (sizeof(zValue));
     set_zdval (pNewNode, dval);
     pNewNode->pNext = NULL;
+    pNewNode->hash = hashKey;
     if (pLast) {
         pLast->pNext = pNewNode;
     } else {
@@ -338,22 +351,25 @@ hash_table_remove (HashTable *hashtable, const char* skey)
     HashNode  *pHead, *pLast, *pRemove;
 
     pHead = pLast = pRemove = NULL;
-    pos = hash_pos (skey, hashtable->hash_table_max_size);
+    pos = hash_pos (hash(skey), hashtable);
     if ( (pHead = hashtable->hashnode[pos]) ) {
-        while (pHead) {
+        hashNode_for_each (pHead) {
             if (strcmp (skey, pHead->sKey) == 0) {
                 pRemove = pHead;
                 break;
             }
             pLast = pHead;
-            pHead = pHead->pNext;
         }
-        if (pLast)                   /* first node is not the want to remove hashnode*/
-            pLast->pNext = pRemove->pNext;
-        else 
-            (hashtable->hashnode)[pos] = NULL;
-
-        __free_hashnode__ (pRemove);
+        if (pRemove) {                      /* find node, but first node is not the want to remove hashnode. */
+            if (pLast) {
+                pLast->pNext = pRemove->pNext;
+            } else {
+                (hashtable->hashnode)[pos] = NULL;
+            } 
+            __free_hashnode__ (pRemove);
+        } else {                            /* not find node. */
+            __die__ ("key is not exist.");
+        }
     } else {
         __die__ ("key is not exist.");
     }
@@ -366,12 +382,11 @@ hash_table_lookup (HashTable *hashtable, const char* skey)
     unsigned int    pos;
     HashNode        *pHead;
 
-    pos = hash_pos (skey, hashtable->hash_table_max_size);
+    pos = hash_pos (hash(skey), hashtable);
     if ( (pHead = (hashtable->hashnode)[pos]) ) {
-        while (pHead) {
+        hashNode_for_each (pHead) {
             if (strcmp (skey, pHead->sKey) == 0)
                 return pHead;
-            pHead = pHead->pNext;
         }
     }
     return NULL;

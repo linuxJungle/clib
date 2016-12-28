@@ -9,8 +9,11 @@
 
 #define HASH_TABLE_INIT_SIZE (1 << 8) 
 
-#define hash_pos(skey, hash_table_size) \
-    ((hash_func((skey))) % hash_table_size)
+#define hash(skey) \
+    (hash_func(skey))
+
+#define hash_pos(hashKey, hashtable) \
+    ((hashKey) % (hashtable->hash_table_max_size))
 
 #define hashTable_is_full(hashtable) \
     (((hashtable)->hash_size) > ((hashtable)->hash_table_max_size))
@@ -138,10 +141,11 @@ typedef struct zvalue {
 
 typedef struct hashnode HashNode;
 struct hashnode {
-    char      *sKey;
-    void      *pValue;
-    Type       type;
-    HashNode  *pNext;
+    char          *sKey;
+    void          *pValue;
+    Type           type;
+    HashNode      *pNext;
+    unsigned long  hash;
 };
 
 typedef struct hashtable {
