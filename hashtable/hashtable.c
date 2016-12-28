@@ -1,40 +1,49 @@
 #include "hashtable.h"
 
-static inline void __free_str_value (HashNode *node);
-static inline void __die__ (const char* error);
+static inline void __free_str_value__ (HashNode *node);
+static void __die__ (const char* error);
 static void __free_hashnode__ (HashNode *node);
 static inline void __hash_rehash__ (HashNode **newHashNode, \
-        size_t pos, HashNode* pNewHead, HashNode* pOldHead);
+        size_t pos, HashNode *pHead,  HashNode* pOldHead);
 static void __hash_table_rehash__ (HashTable *hashtable);
+static HashNode* __deep_clone_hashnode__ (HashNode* hashnode);
+
 
 /*if key is exists and type is STRING, free string's value memory*/
 inline void 
-__free_str_value (HashNode *node)
+__free_str_value__ (HashNode *node)
 {
     if (node->type == STRING) free(zStrValue(node));
 }
 
-inline void 
+void 
 __die__ (const char* error) {
     fprintf (stderr, "%s\n", error);
     exit (-1);
 }
 
+/* copy current node, set the next pointer point NULL */
+HashNode* 
+__deep_clone_hashnode__ (HashNode* hashnode) {
+    HashNode *clonedHashnode = (HashNode *)malloc(sizeof(HashNode)); 
+    *clonedHashnode = *hashnode; 
+    clonedHashnode->pNext = NULL;                                  
+    return clonedHashnode;
+}                    
+
 void
-__hash_rehash__ (HashNode **newHashNode, size_t pos, 
-        HashNode* pNewHead, HashNode* pOldHead)
+__hash_rehash__ (HashNode **newHashNode, size_t pos, \
+        HashNode* pHead,  HashNode* pInsertNode)
 {
     HashNode  *pNewLast;
 
-    pOldHead->pNext = NULL;
-
-    if (pNewHead) {
+    if (pHead) {
         do {
-            pNewLast = pNewHead;
-        } while ((pNewHead = pNewHead->pNext));
-        pNewLast->pNext = pOldHead;
+            pNewLast = pHead;
+        } while ((pHead = pHead->pNext));
+        pNewLast->pNext = pInsertNode;
     } else {
-        newHashNode[pos] = pOldHead; 
+        newHashNode[pos] = pInsertNode; 
     }
 }
 
@@ -42,29 +51,20 @@ void
 __hash_table_rehash__ (HashTable *hashtable)
 {
     size_t     i, pos, hash_old_size;
-    HashNode   *pOldHead, *pNewHead;
-    HashNode   **newHashNode;
+    HashNode   *pOldHead, **newHashNode;
 
-    hash_old_size = hashtable->hash_table_max_size;
-    hashtable->hash_table_max_size = (hashtable->hash_table_max_size) << 1;
+    hash_old_size = hashTable_max_size(hashtable);
+    hashTable_expand(hashtable);
     newHashNode = (HashNode **)calloc (sizeof(HashNode*), \
-        hashtable->hash_table_max_size);
+        hashTable_max_size(hashtable));
     for (i = 0; i < hash_old_size; i++) {
         if ((pOldHead = (hashtable->hashnode)[i])) {
             hashNode_for_each (pOldHead) {
-                /* copy current node, set the next pointer point NULL */
-                HashNode *pTemp = (HashNode *)malloc(sizeof(HashNode));  
-                *pTemp = *pOldHead;
-                pTemp->pNext = NULL;
-
-                pos = hash_pos (pOldHead->sKey, hashtable->hash_table_max_size);
-                pNewHead = newHashNode[pos];
-                __hash_rehash__(newHashNode, pos, pNewHead, pTemp);
+                HashNode *clonedHashnode = __deep_clone_hashnode__(pOldHead);
+                pos = hash_pos (pOldHead->sKey, hashTable_max_size(hashtable));
+                __hash_rehash__ (newHashNode, pos, newHashNode[pos], clonedHashnode);
             }
-            /* free current node hlist */
-            hashNode_for_each (pOldHead) {
-                __free_hashnode__(pOldHead);
-            }
+            free_hlist (pOldHead);
         }
     }
     free (hashtable->hashnode);
@@ -75,19 +75,8 @@ void
 __free_hashnode__ (HashNode *node)
 {
     free (node->sKey);          /* free key */
-    switch (node->type) {
-    
-    case LONG:
-    case BOOL:
-    case DOUBLE:
-        break;
-    case STRING:
-        __free_str_value(node); /*if value is string, free value*/
-        break;
-    default:
-        break;
-    }    
-    free (node->pValue);      /* free zvalue struct */
+    __free_str_value__ (node);  /*if value is string, free value*/
+    free (node->pValue);        /* free zvalue struct */
     free (node);                /* free current hashnode */
 }
 
@@ -95,10 +84,10 @@ __free_hashnode__ (HashNode *node)
 void
 hash_table_init (HashTable *hashtable)
 {
-    hashtable->hash_table_max_size = HASH_TABLE_MAX_SIZE;
+    hashtable->hash_table_max_size = HASH_TABLE_INIT_SIZE;
     hashtable->hash_size = 0;
     hashtable->hashnode = (HashNode **)calloc (sizeof(HashNode*), \
-            HASH_TABLE_MAX_SIZE);
+            HASH_TABLE_INIT_SIZE);
 }
 
 #if 0
@@ -208,7 +197,7 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
     if (pHead) {
         while (pHead) {
             if (strcmp (pHead->sKey, skey) == 0) {
-                __free_str_value (pHead);
+                __free_str_value__ (pHead);
                 r_set_zlval (pHead, nvalue);
             }
             pLast = pHead;
@@ -245,7 +234,7 @@ hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
     if (pHead) {
         while (pHead) {
             if (strcmp (pHead->sKey, skey) == 0) {
-                __free_str_value (pHead);
+                __free_str_value__ (pHead);
                 r_set_zStrval (pHead, pValue);      /*set then return*/
             }
             pLast = pHead;                          /*lastest hashnode*/
@@ -282,7 +271,7 @@ hash_table_insert_bool (HashTable *hashtable, const char* skey, bool value)
     if (pHead) {
         while (pHead) {
             if (strcmp (pHead->sKey, skey) == 0) {
-                __free_str_value (pHead);
+                __free_str_value__ (pHead);
                 r_set_zbval (pHead, value);
             }
             pLast = pHead;
@@ -320,7 +309,7 @@ hash_table_insert_double (HashTable *hashtable, const char* skey, double dval)
     if (pHead) {
         while (pHead) {
             if (strcmp (pHead->sKey, skey) == 0) {
-                __free_str_value (pHead);
+                __free_str_value__ (pHead);
                 r_set_zdval (pHead, dval);
             }
             pLast = pHead;

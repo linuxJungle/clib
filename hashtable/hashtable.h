@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define HASH_TABLE_MAX_SIZE (1 << 5)
+#define HASH_TABLE_INIT_SIZE (1 << 8) 
 
 #define hash_pos(skey, hash_table_size) \
     ((hash_func((skey))) % hash_table_size)
@@ -26,6 +26,17 @@
 
 #define hashTable_max_size(hashtable) \
     ((hashtable)->hash_table_max_size)
+
+/* free current node hlist */
+#define free_hlist(hashnode) \
+    do { \
+        hashNode_for_each (hashnode) {   \
+            __free_hashnode__(hashnode); \
+        }                                \
+    } while(0)
+
+#define hashTable_expand(hashtable) \
+    ((hashTable_max_size(hashtable)) <<= 1)
 
 #define zvalue(hashnode) \
     (((zValue *)(hashnode)->pValue)->value)
