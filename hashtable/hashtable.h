@@ -120,6 +120,9 @@
 #define hash_table_is_rehashing(hashtable) \
     (((hashtable)->hash_size) > ((((hashtable)->hash_table_max_size)*75/100)))
 
+#define hash_table_insert(type) \
+    hash_table_insert_##type
+
 
 typedef enum {
     LONG,
@@ -163,7 +166,7 @@ unsigned long hash_func (const char* skey);
 void hash_table_insert_long (HashTable *hashtable, 
         const char* skey, long nvalue);
 
-void hash_table_insert_str (HashTable *hashtable, 
+void hash_table_insert_string (HashTable *hashtable, 
         const char* skey, char* pValue);
 
 void hash_table_insert_bool (HashTable *hashtable, 

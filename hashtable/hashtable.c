@@ -222,7 +222,7 @@ hash_table_insert_long (HashTable *hashtable, const char* skey, long nvalue)
 }
 
 void
-hash_table_insert_str (HashTable *hashtable, const char* skey, char* pValue)
+hash_table_insert_string (HashTable *hashtable, const char* skey, char* pValue)
 {
     size_t          pos;
     HashNode       *pNewNode;
