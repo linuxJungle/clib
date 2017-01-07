@@ -1,7 +1,6 @@
 #include "hashtable.h"
 
 static inline void __free_str_value__ (HashNode *node);
-static void __die__ (const char* error);
 static void __free_hashnode__ (HashNode *node);
 static inline void __hash_rehash__ (HashNode **newHashNode, \
         size_t pos, HashNode *pHead,  HashNode* pOldHead);
@@ -17,7 +16,7 @@ __free_str_value__ (HashNode *node)
 }
 
 void 
-__die__ (const char* error) {
+die (const char* error) {
     fprintf (stderr, "%s\n", error);
     exit (-1);
 }
@@ -368,10 +367,10 @@ hash_table_remove (HashTable *hashtable, const char* skey)
             } 
             __free_hashnode__ (pRemove);
         } else {                            /* not find node. */
-            __die__ ("key is not exist.");
+            die ("key is not exist.");
         }
     } else {
-        __die__ ("key is not exist.");
+        die ("key is not exist.");
     }
 }
 

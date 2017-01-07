@@ -120,9 +120,21 @@
 #define hash_table_is_rehashing(hashtable) \
     (((hashtable)->hash_size) > ((((hashtable)->hash_table_max_size)*75/100)))
 
-#define hash_table_insert(type) \
-    hash_table_insert_##type
 
+#define hash_table_insert(table, key, value) _Generic((value),\
+    _Bool: hash_table_insert_bool, \
+    short int: hash_table_insert_long, \
+    unsigned short int: hash_table_insert_long, \
+    int: hash_table_insert_long, \
+    unsigned int: hash_table_insert_long, \
+    long int: hash_table_insert_long, \
+    unsigned long int: hash_table_insert_long, \
+    long long int: hash_table_insert_long, \
+    unsigned long long int: hash_table_insert_long, \
+    float: hash_table_insert_double, \
+    double: hash_table_insert_double, \
+    char *: hash_table_insert_string, \
+    default: unsupport_type)((table), (key), (value))
 
 typedef enum {
     LONG,
@@ -161,6 +173,8 @@ void hash_table_init (HashTable *hashtable);
 
 /* unsigned int hash_table_hash_str (const char* skey); */
 
+void die (const char* error);
+
 unsigned long hash_func (const char* skey);
 
 void hash_table_insert_long (HashTable *hashtable, 
@@ -185,5 +199,11 @@ void hash_node_print (HashNode *hashnode);
 void hash_table_print (HashTable *hashtable);
 
 void hash_table_release (HashTable *hashtable);
+
+/* it will confirm in comipile time*/
+static void
+unsupport_type (HashTable *table, const char *key, ...) {
+    fprintf(stderr, "unsupport value type, insert key=[%s] failed\n", key);
+}
 
 #endif /* !HASHTABLE_H */

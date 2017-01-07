@@ -8,13 +8,24 @@ main (void)
     hash_table_init(hashtable);
 
     char buf[4096];
-    int i = 0;
-    srand((unsigned)time(0));
-    for(i = 0; i < 10000000; i++) {
-        sprintf(buf, "%d", rand());
-        //printf("%s\n", buf);
-        hash_table_insert(string)(hashtable, buf, buf);
-    } 
+    //int i = 0;
+    char *a = "hello";
+    bool b = true;
+    long c = 1;
+    double d = 1.1;
+    char e = 'c';
+    hash_table_insert(hashtable, "string", a);
+    hash_table_insert(hashtable, "bool", b);
+    hash_table_insert(hashtable, "long", c);
+    hash_table_insert(hashtable, "double", d);
+    hash_table_insert(hashtable, "unsupport type", e);
+    hash_table_print(hashtable);
+    //srand((unsigned)time(0));
+    //for(i = 0; i < 10000000; i++) {
+    //    sprintf(buf, "%d", rand());
+    //    //printf("%s\n", buf);
+    //    hash_table_insert(string)(hashtable, buf, buf);
+    //} 
     //char *key = "1234567890abcdefghijklmnopqrstuvwxyz";
     //char *tmp;
     //for (tmp = key; strlen(key); key++) {
@@ -37,12 +48,12 @@ main (void)
 
     //hash_table_print (hashtable);
 
-    hash_table_insert(long)(hashtable, "1111", 1111);
-    HashNode * node = hash_table_lookup (hashtable, "1111");
-    if (node)
-        hash_node_print (node);
-    else
-        printf ("key not exists\n");
+    //hash_table_insert(long)(hashtable, "1111", 1111);
+    //HashNode * node = hash_table_lookup (hashtable, "1111");
+    //if (node)
+    //    hash_node_print (node);
+    //else
+    //    printf ("key not exists\n");
 
     printf ("hashtable size = %ld\thashtable max size = %ld\n", hashTable_size (hashtable), hashtable->hash_table_max_size);
     hash_table_remove (hashtable, "1111");
