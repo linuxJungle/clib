@@ -44,6 +44,9 @@
 #define zvalue(hashnode) \
     (((zValue *)(hashnode)->pValue)->value)
 
+#define zVoidValue(hashnode) \
+    ((zvalue(hashnode)).pval)
+
 #define zStrValue(hashnode) \
     ((zvalue(hashnode)).str.value)
 
@@ -63,6 +66,12 @@
     do {                                    \
         zlval ((hashnode)) = lval;          \
         (hashnode)->type   = LONG;          \
+    } while(0)
+
+#define set_zVoidval(hashnode, pval)           \
+    do {                                    \
+        zVoidValue ((hashnode)) = pval;          \
+        (hashnode)->type        = VOID;          \
     } while(0)
 
 #define set_key(hashnode, str)              \
@@ -91,6 +100,12 @@
     do {                               \
         zdval (hashnode) = (dval);     \
         (hashnode)->type = DOUBLE;     \
+    } while(0)
+
+#define r_set_zVoidval(hashnode, pval)      \
+    do {                                  \
+        set_zVoidval((hashnode), (pval));   \
+        return;                           \
     } while(0)
 
 #define r_set_zStrval(hashnode, str)      \
@@ -141,12 +156,14 @@ typedef enum {
     BOOL,
     STRING,
     DOUBLE,
+    VOID,
 } Type;
 
 typedef struct zvalue {
     union {
-        long   lval;
-        double dval;
+        long    lval;
+        double  dval;
+        void   *pval;
         struct {
             char *value;
             unsigned long len;
@@ -179,6 +196,9 @@ unsigned long hash_func (const char* skey);
 
 void hash_table_insert_long (HashTable *hashtable, 
         const char* skey, long nvalue);
+
+void hash_table_insert_struct (HashTable *hashtable, 
+        const char* skey, void *pvalue);
 
 void hash_table_insert_string (HashTable *hashtable, 
         const char* skey, char* pValue);
