@@ -21,14 +21,9 @@ main (void)
     hash_table_insert(hashtable, "bool", b);
     hash_table_insert(hashtable, "long", c);
     hash_table_insert(hashtable, "double", d);
+    hash_table_remove (hashtable, "bool");
+    //hash_table_remove (hashtable, "string");
     //hash_table_insert(hashtable, "unsupport type", e);
-    for(i = 0; i < 100000000; i++) {
-        struct aa* ddd = (struct aa*)malloc(sizeof(struct aa));
-        ddd->a = 1;
-        ddd->b = 2;
-        hash_table_insert_struct(hashtable, "struct", ddd);
-        hash_table_remove(hashtable, "struct");
-    }
     //hash_table_insert_struct(hashtable, "struct", &ddd);
     hash_table_print(hashtable);
     //srand((unsigned)time(0));
@@ -60,18 +55,17 @@ main (void)
     //hash_table_print (hashtable);
 
     //hash_table_insert(long)(hashtable, "1111", 1111);
-    HashNode * node = hash_table_lookup (hashtable, "struct");
-    if (node) {
-        //hash_node_print (node);
-        struct aa* ret = (struct aa*)(zvalue(node).pval);
-        printf("a:%d, b: %d\n", ret->a, ret->b);
-    }
-    else {
-        printf ("key not exists\n");
-    }
+    //HashNode * node = hash_table_lookup (hashtable, "struct");
+    //if (node) {
+    //    //hash_node_print (node);
+    //    struct aa* ret = (struct aa*)(zvalue(node).pval);
+    //    printf("a:%d, b: %d\n", ret->a, ret->b);
+    //}
+    //else {
+    //    printf ("key not exists\n");
+    //}
 
-    printf ("hashtable size = %ld\thashtable max size = %ld\n", hashTable_size (hashtable), hashtable->hash_table_max_size);
-    hash_table_remove (hashtable, "1111");
+    //printf ("hashtable size = %ld\thashtable max size = %ld\n", hashTable_size (hashtable), hashtable->hash_table_max_size);
 
     //printf("----------------\n");
 

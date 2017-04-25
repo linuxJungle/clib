@@ -405,8 +405,8 @@ hash_table_remove (HashTable *hashtable, const char* skey)
             if (pLast) {
                 pLast->pNext = pRemove->pNext;
             } else {
-                (hashtable->hashnode)[pos] = NULL;
-            } 
+                hashtable->hashnode[pos] = pRemove->pNext;
+            }
             __free_hashnode__ (pRemove);
         } else {                            /* not find node. */
             die ("key is not exist.");
