@@ -30,14 +30,6 @@
 #define hashTable_max_size(hashtable) \
     ((hashtable)->hash_table_max_size)
 
-/* free current node hlist */
-#define free_hlist(hashnode) \
-    do { \
-        hashNode_for_each (hashnode) {   \
-            __free_hashnode__(hashnode); \
-        }                                \
-    } while(0)
-
 #define hashTable_expand(hashtable) \
     ((hashTable_max_size(hashtable)) <<= 1)
 
@@ -189,8 +181,6 @@ typedef struct hashtable {
 void hash_table_init (HashTable *hashtable);
 
 /* unsigned int hash_table_hash_str (const char* skey); */
-
-void die (const char* error);
 
 unsigned long hash_func (const char* skey);
 

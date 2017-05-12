@@ -27,11 +27,10 @@ main (void)
     //hash_table_insert_struct(hashtable, "struct", &ddd);
     hash_table_print(hashtable);
     //srand((unsigned)time(0));
-    //for(i = 0; i < 10000000; i++) {
-    //    sprintf(buf, "%d", rand());
-    //    //printf("%s\n", buf);
-    //    hash_table_insert(string)(hashtable, buf, buf);
-    //} 
+    for(i = 0; i < 5000000; i++) {
+        sprintf(buf, "%d", i);
+        hash_table_insert(hashtable, buf, buf);
+    } 
     //char *key = "1234567890abcdefghijklmnopqrstuvwxyz";
     //char *tmp;
     //for (tmp = key; strlen(key); key++) {
